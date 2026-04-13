@@ -1,8 +1,10 @@
 import * as path from 'path';
 import * as fs from 'fs';
+import { refCache } from './cache';
 
 /**
  * Resolve a $ref path and return the referenced JSON object.
+ * Results are cached to avoid repeated file reads.
  * 
  * Supports paths like:
  *   ../../common-types/parameter2.json#/definitions/ABCXYZService
@@ -12,6 +14,13 @@ import * as fs from 'fs';
  * @returns The resolved JSON object, or undefined if resolution fails
  */
 export function resolveRef(ref: string, baseDir: string): any | undefined {
+    // Check cache first
+    const cacheKey = `${baseDir}|${ref}`;
+    const cached = refCache.get(cacheKey);
+    if (cached !== undefined) {
+        return cached;
+    }
+
     try {
         // Split the ref into file path and JSON pointer
         const [filePart, pointerPart] = ref.split('#');
@@ -37,11 +46,19 @@ export function resolveRef(ref: string, baseDir: string): any | undefined {
         }
 
         // If there's a JSON pointer, navigate to the specified path
+        let result: any;
         if (pointerPart) {
-            return navigateJsonPointer(parsed, pointerPart);
+            result = navigateJsonPointer(parsed, pointerPart);
+        } else {
+            result = parsed;
         }
 
-        return parsed;
+        // Cache the result
+        if (result !== undefined) {
+            refCache.set(cacheKey, result);
+        }
+
+        return result;
     } catch {
         return undefined;
     }

@@ -6,6 +6,7 @@ import {
     formatFunctionInfoMarkdown,
     formatParameterInfoMarkdown,
 } from './infoProvider';
+import { functionFileCache, refCache, agentDirCache, documentCache } from './cache';
 
 /**
  * Activate the extension. Registers both a HoverProvider and a DefinitionProvider
@@ -27,14 +28,22 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     // Register DefinitionProvider — Ctrl+Click shows peek/go-to definition
-    // We use this to show a peek widget with the function definition file
     const definitionProvider = vscode.languages.registerDefinitionProvider(jsonSelector, {
         provideDefinition(document, position, token) {
             return provideDefinitionInfo(document, position);
         },
     });
 
-    context.subscriptions.push(hoverProvider, definitionProvider);
+    // Invalidate caches when JSON files are saved (e.g., function definition files edited)
+    const saveListener = vscode.workspace.onDidSaveTextDocument((doc) => {
+        if (doc.languageId === 'json' || doc.languageId === 'jsonc') {
+            functionFileCache.clear();
+            refCache.clear();
+            documentCache.clear();
+        }
+    });
+
+    context.subscriptions.push(hoverProvider, definitionProvider, saveListener);
 }
 
 /**

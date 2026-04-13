@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { documentCache } from './cache';
 
 /**
  * Represents the context of a word hovered in the JSON file.
@@ -27,11 +28,17 @@ export function getHoverContext(
     position: vscode.Position
 ): HoverContext | undefined {
     const text = document.getText();
-    let parsed: any;
-    try {
-        parsed = JSON.parse(text);
-    } catch {
-        return undefined;
+
+    // Cache parsed JSON by document URI + version (auto-invalidates on edit)
+    const cacheKey = `${document.uri.toString()}@${document.version}`;
+    let parsed: any = documentCache.get(cacheKey);
+    if (parsed === undefined) {
+        try {
+            parsed = JSON.parse(text);
+            documentCache.set(cacheKey, parsed);
+        } catch {
+            return undefined;
+        }
     }
 
     if (!parsed || !Array.isArray(parsed.turns)) {

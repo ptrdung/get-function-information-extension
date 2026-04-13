@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { findAgentDirectory, findFunctionFile } from './agentFinder';
 import { resolveRef, formatRefData } from './refResolver';
+import { functionFileCache } from './cache';
 
 /**
  * Information about a function, extracted from {function_name}.json
@@ -45,8 +46,13 @@ export function getFunctionInfo(currentFilePath: string, functionName: string): 
     }
 
     try {
-        const content = fs.readFileSync(functionFilePath, 'utf-8');
-        const parsed = JSON.parse(content);
+        // Use cache to avoid re-reading from disk
+        let parsed = functionFileCache.get(functionFilePath);
+        if (parsed === undefined) {
+            const content = fs.readFileSync(functionFilePath, 'utf-8');
+            parsed = JSON.parse(content);
+            functionFileCache.set(functionFilePath, parsed);
+        }
 
         const info: FunctionInfo = {};
 
@@ -95,8 +101,13 @@ export function getParameterInfo(
     }
 
     try {
-        const content = fs.readFileSync(functionFilePath, 'utf-8');
-        const parsed = JSON.parse(content);
+        // Use cache to avoid re-reading from disk
+        let parsed = functionFileCache.get(functionFilePath);
+        if (parsed === undefined) {
+            const content = fs.readFileSync(functionFilePath, 'utf-8');
+            parsed = JSON.parse(content);
+            functionFileCache.set(functionFilePath, parsed);
+        }
 
         // Navigate to function_parameters.properties.{parameterName}
         const properties = parsed?.function_parameters?.properties;
