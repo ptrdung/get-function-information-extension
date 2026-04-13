@@ -2,7 +2,7 @@
   "name": "get-function-information",
   "displayName": "Get Function Information",
   "description": "Hover IntelliSense for function and parameter information in JSON files with turns structure",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "publisher": "ptrdung",
   "engines": {
     "vscode": "^1.85.0"
@@ -15,7 +15,23 @@
     "onLanguage:jsonc"
   ],
   "main": "./out/extension.js",
-  "contributes": {},
+  "contributes": {
+    "commands": [
+      {
+        "command": "get-function-information.showInfo",
+        "title": "Show Function Info"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "get-function-information.showInfo",
+          "when": "editorHasSelection && resourceLangId =~ /^json(c)?$/",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",

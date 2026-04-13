@@ -9,8 +9,8 @@ import {
 import { functionFileCache, refCache, agentDirCache, documentCache } from './cache';
 
 /**
- * Activate the extension. Registers both a HoverProvider and a DefinitionProvider
- * for JSON files to provide function/parameter information.
+ * Activate the extension. Registers HoverProvider, DefinitionProvider,
+ * and a right-click context menu command for JSON files.
  */
 export function activate(context: vscode.ExtensionContext) {
     console.log('Get Function Information extension is now active');
@@ -34,7 +34,13 @@ export function activate(context: vscode.ExtensionContext) {
         },
     });
 
-    // Invalidate caches when JSON files are saved (e.g., function definition files edited)
+    // Register "Show Function Info" command — right-click context menu
+    const showInfoCommand = vscode.commands.registerCommand(
+        'get-function-information.showInfo',
+        () => showInfoPanel(context)
+    );
+
+    // Invalidate caches when JSON files are saved
     const saveListener = vscode.workspace.onDidSaveTextDocument((doc) => {
         if (doc.languageId === 'json' || doc.languageId === 'jsonc') {
             functionFileCache.clear();
@@ -43,7 +49,155 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    context.subscriptions.push(hoverProvider, definitionProvider, saveListener);
+    context.subscriptions.push(hoverProvider, definitionProvider, showInfoCommand, saveListener);
+}
+
+/**
+ * Show function/parameter info in a Webview panel.
+ * Triggered by right-click → "Show Function Info" on selected text.
+ */
+function showInfoPanel(extContext: vscode.ExtensionContext): void {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+        vscode.window.showWarningMessage('No active editor.');
+        return;
+    }
+
+    const document = editor.document;
+    const selection = editor.selection;
+
+    // Use the selection start position for context detection
+    const position = selection.start;
+    const filePath = document.uri.fsPath;
+
+    const hoverCtx = getHoverContext(document, position);
+    if (!hoverCtx) {
+        vscode.window.showInformationMessage('No function or parameter info found for the selected text.');
+        return;
+    }
+
+    let markdownContent: vscode.MarkdownString | undefined;
+    let title = '';
+
+    if (hoverCtx.type === 'function_name') {
+        const info = getFunctionInfo(filePath, hoverCtx.functionName);
+        if (!info) {
+            vscode.window.showInformationMessage(`No definition file found for function "${hoverCtx.functionName}".`);
+            return;
+        }
+        markdownContent = formatFunctionInfoMarkdown(info);
+        title = `🔧 ${hoverCtx.functionName}`;
+    } else if (hoverCtx.type === 'parameter_name' && hoverCtx.parameterName) {
+        const info = getParameterInfo(filePath, hoverCtx.functionName, hoverCtx.parameterName);
+        if (!info) {
+            vscode.window.showInformationMessage(`No info found for parameter "${hoverCtx.parameterName}".`);
+            return;
+        }
+        markdownContent = formatParameterInfoMarkdown(info);
+        title = `📌 ${hoverCtx.parameterName}`;
+    }
+
+    if (!markdownContent) {
+        return;
+    }
+
+    // Create and show Webview panel
+    const panel = vscode.window.createWebviewPanel(
+        'functionInfo',
+        title,
+        { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
+        { enableScripts: false }
+    );
+
+    panel.webview.html = getWebviewContent(title, markdownContent.value);
+}
+
+/**
+ * Generate HTML content for the Webview panel.
+ * Converts markdown-style content to styled HTML.
+ */
+function getWebviewContent(title: string, markdownRaw: string): string {
+    // Convert markdown to simple HTML
+    let htmlBody = markdownRaw
+        // Headers
+        .replace(/### (.+)/g, '<h3>$1</h3>')
+        .replace(/## (.+)/g, '<h2>$1</h2>')
+        // Horizontal rules
+        .replace(/---/g, '<hr/>')
+        // Bold
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        // Inline code
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        // Code blocks
+        .replace(/```json\n([\s\S]*?)```/g, '<pre class="code-block">$1</pre>')
+        .replace(/```\n([\s\S]*?)```/g, '<pre class="code-block">$1</pre>')
+        // Numbered lists (e.g., "1. `value`")
+        .replace(/^(\d+)\. /gm, '<span class="list-num">$1.</span> ')
+        // Line breaks
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br/>');
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+            font-size: var(--vscode-font-size, 13px);
+            color: var(--vscode-foreground, #cccccc);
+            background-color: var(--vscode-editor-background, #1e1e1e);
+            padding: 16px 24px;
+            line-height: 1.6;
+            max-width: 800px;
+        }
+        h2, h3 {
+            color: var(--vscode-foreground, #ffffff);
+            margin-top: 8px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid var(--vscode-widget-border, #333);
+            padding-bottom: 6px;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid var(--vscode-widget-border, #333);
+            margin: 12px 0;
+        }
+        code {
+            background: var(--vscode-textCodeBlock-background, #2d2d2d);
+            color: var(--vscode-textPreformat-foreground, #d7ba7d);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: var(--vscode-editor-font-family, 'Consolas', 'Courier New', monospace);
+            font-size: 0.95em;
+        }
+        pre.code-block {
+            background: var(--vscode-textCodeBlock-background, #2d2d2d);
+            padding: 12px 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: var(--vscode-editor-font-family, 'Consolas', monospace);
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+        strong {
+            color: var(--vscode-foreground, #e0e0e0);
+        }
+        p {
+            margin: 6px 0;
+        }
+        .list-num {
+            color: var(--vscode-textPreformat-foreground, #d7ba7d);
+            font-weight: bold;
+            margin-right: 4px;
+        }
+    </style>
+</head>
+<body>
+    <p>${htmlBody}</p>
+</body>
+</html>`;
 }
 
 /**
