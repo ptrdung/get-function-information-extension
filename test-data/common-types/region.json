@@ -1,0 +1,18 @@
+{
+    "definitions": {
+        "RegionCode": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country/region code used to localize results",
+            "enum": [
+                "VN", "US", "GB", "JP", "KR", "FR", "DE", "TH", "SG", "AU"
+            ],
+            "examples": [
+                "VN — Vietnam",
+                "US — United States",
+                "GB — United Kingdom",
+                "JP — Japan"
+            ],
+            "default": "US"
+        }
+    }
+}

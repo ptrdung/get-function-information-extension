@@ -1,0 +1,20 @@
+{
+    "definitions": {
+        "LanguageCode": {
+            "type": "string",
+            "description": "ISO 639-1 two-letter language code for specifying source and target languages in translation",
+            "enum": [
+                "en", "vi", "ja", "ko", "zh", "fr", "de", "es", "pt", "th", "id", "ru", "ar", "hi"
+            ],
+            "examples": [
+                "en — English",
+                "vi — Vietnamese (Tiếng Việt)",
+                "ja — Japanese (日本語)",
+                "ko — Korean (한국어)",
+                "zh — Chinese (中文)",
+                "fr — French (Français)"
+            ],
+            "default": "en"
+        }
+    }
+}

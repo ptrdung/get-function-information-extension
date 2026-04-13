@@ -1,0 +1,36 @@
+{
+    "function_name": "searchWeb",
+    "function_search_description": "Search the web for information using a search engine. Returns a list of relevant web pages with titles, URLs, and snippets. Use this function when the user needs to find information online, look up facts, or discover web resources.",
+    "reasoning_instructions": "Before calling searchWeb, consider:\n1. Reformulate the user's question into an effective search query\n2. Use specific keywords rather than full sentences\n3. Include relevant context like location or language if applicable\n4. Consider whether multiple searches might be needed for complex queries\n5. Prefer recent results for time-sensitive information",
+    "function_parameters": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+            "query": {
+                "description": "The search query string. Should be concise and use relevant keywords. Avoid overly long queries — prefer 3-7 words for best results.",
+                "type": "string"
+            },
+            "num_results": {
+                "description": "The maximum number of search results to return. Higher values provide more comprehensive results but may include less relevant items.",
+                "type": "integer",
+                "default": 10,
+                "minimum": 1,
+                "maximum": 50
+            },
+            "language": {
+                "description": "The language code for search results (ISO 639-1). Results will be prioritized in this language.",
+                "type": "string",
+                "default": "en"
+            },
+            "safe_search": {
+                "description": "Whether to enable safe search filtering to exclude explicit content from results.",
+                "type": "boolean",
+                "default": true
+            },
+            "region": {
+                "description": "The region/country to localize search results.",
+                "$ref": "../../common-types/region.json#/definitions/RegionCode"
+            }
+        }
+    }
+}

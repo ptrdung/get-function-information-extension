@@ -1,0 +1,27 @@
+{
+    "function_name": "translateText",
+    "function_search_description": "Translate text from one language to another. Supports over 100 languages with high-quality neural machine translation. Can handle both short phrases and long paragraphs.",
+    "function_parameters": {
+        "type": "object",
+        "required": ["text", "target_language"],
+        "properties": {
+            "text": {
+                "description": "The text content to translate. Can be a single word, sentence, or multiple paragraphs. Maximum 5000 characters per request.",
+                "type": "string"
+            },
+            "source_language": {
+                "description": "The source language code (ISO 639-1). If not specified, the language will be auto-detected.",
+                "$ref": "../../common-types/languages.json#/definitions/LanguageCode"
+            },
+            "target_language": {
+                "description": "The target language code (ISO 639-1) to translate the text into.",
+                "$ref": "../../common-types/languages.json#/definitions/LanguageCode"
+            },
+            "formality": {
+                "description": "The formality level of the translation. Not all language pairs support formality settings.",
+                "type": "string",
+                "enum": ["formal", "informal", "auto"]
+            }
+        }
+    }
+}

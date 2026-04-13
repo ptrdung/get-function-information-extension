@@ -1,0 +1,63 @@
+{
+    "agent_name": "SearchAgent",
+    "version": "1.0.0",
+    "turns": [
+        {
+            "turn_id": 1,
+            "function_name": "searchWeb",
+            "function_parameters": {
+                "query": "best restaurants in Ho Chi Minh City",
+                "num_results": 10,
+                "language": "vi"
+            },
+            "function_parameters_variations": [
+                {
+                    "query": "nhà hàng tốt nhất TP.HCM",
+                    "num_results": 5,
+                    "safe_search": true
+                },
+                {
+                    "query": "top restaurants Saigon",
+                    "num_results": 20,
+                    "region": "VN"
+                }
+            ],
+            "expected_output": "list of restaurants"
+        },
+        {
+            "turn_id": 2,
+            "function_name": "getWeather",
+            "function_parameters": {
+                "location": "Ho Chi Minh City",
+                "unit": "celsius",
+                "forecast_days": 7
+            },
+            "function_parameters_variations": [
+                {
+                    "location": "Hanoi",
+                    "unit": "fahrenheit",
+                    "forecast_days": 3
+                }
+            ],
+            "expected_output": "weather forecast"
+        },
+        {
+            "turn_id": 3,
+            "function_name": "translateText",
+            "function_parameters": {
+                "text": "Hello, how are you?",
+                "source_language": "en",
+                "target_language": "vi",
+                "formality": "formal"
+            },
+            "function_parameters_variations": [
+                {
+                    "text": "Good morning",
+                    "source_language": "en",
+                    "target_language": "ja"
+                }
+            ],
+            "expected_output": "translated text"
+        }
+    ]
+}

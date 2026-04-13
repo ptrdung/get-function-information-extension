@@ -1,0 +1,15 @@
+{
+    "definitions": {
+        "TemperatureUnit": {
+            "type": "string",
+            "description": "Unit of measurement for temperature values",
+            "enum": ["celsius", "fahrenheit", "kelvin"],
+            "default": "celsius",
+            "examples": [
+                "celsius — Used in most countries worldwide (°C)",
+                "fahrenheit — Used primarily in the United States (°F)",
+                "kelvin — Used in scientific contexts (K)"
+            ]
+        }
+    }
+}
