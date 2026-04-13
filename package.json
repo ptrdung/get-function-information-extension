@@ -2,7 +2,7 @@
   "name": "get-function-information",
   "displayName": "Get Function Information",
   "description": "Hover IntelliSense for function and parameter information in JSON files with turns structure",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "ptrdung",
   "engines": {
     "vscode": "^1.85.0"

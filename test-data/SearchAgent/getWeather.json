@@ -4,7 +4,9 @@
     "reasoning_instructions": "Use getWeather when:\n1. The user asks about current or future weather conditions\n2. The user is planning travel and needs weather info\n3. Combine with location context from the conversation\n4. Default to celsius for most international users\n5. Use forecast_days=1 for 'today's weather' and 7 for weekly forecasts",
     "function_parameters": {
         "type": "object",
-        "required": ["location"],
+        "required": [
+            "location"
+        ],
         "properties": {
             "location": {
                 "description": "The city name or geographic location to get weather for. Can be a city name, city+country, or coordinates.",
@@ -12,7 +14,7 @@
             },
             "unit": {
                 "description": "The temperature unit for the response.",
-                "$ref": "../common-types/units.json#/definitions/TemperatureUnit"
+                "$ref": "../../common-types/units.json#/definitions/TemperatureUnit"
             },
             "forecast_days": {
                 "description": "Number of days to include in the weather forecast. Use 1 for current day only, up to 14 for extended forecast.",

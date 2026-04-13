@@ -63,41 +63,47 @@ function analyzeJsonContext(
     word: string,
     parsed: any
 ): HoverContext | undefined {
-    // Find which turn block the cursor is in
-    // We'll use a simple approach: scan through turns and find position ranges
+    // Iterate through turns[].functions[] to find the matching context
 
     const turns = parsed.turns;
 
-    // Find all turn blocks by locating "function_name" keys and mapping to turn indices
     for (const turn of turns) {
-        const functionName = turn.function_name;
-        if (!functionName) {
+        // Each turn has a "functions" array containing function objects
+        const functions = turn.functions;
+        if (!Array.isArray(functions)) {
             continue;
         }
 
-        // Check if the word matches the function name (as a value)
-        if (word === functionName || word === normalizeWord(functionName)) {
-            // Verify the cursor is near a "function_name" key in the text
-            if (isWordAtFunctionNameValue(text, offset, functionName)) {
-                return {
-                    type: 'function_name',
-                    word: word,
-                    functionName: functionName,
-                };
+        for (const func of functions) {
+            const functionName = func.function_name;
+            if (!functionName) {
+                continue;
             }
-        }
 
-        // Check if the word matches a parameter key
-        const allParamKeys = collectAllParameterKeys(turn);
-        if (allParamKeys.has(word)) {
-            // Verify the cursor is indeed at a parameter key position
-            if (isWordAtParameterKey(text, offset, word)) {
-                return {
-                    type: 'parameter_name',
-                    word: word,
-                    functionName: functionName,
-                    parameterName: word,
-                };
+            // Check if the word matches the function name (as a value)
+            if (word === functionName || word === normalizeWord(functionName)) {
+                // Verify the cursor is near a "function_name" key in the text
+                if (isWordAtFunctionNameValue(text, offset, functionName)) {
+                    return {
+                        type: 'function_name',
+                        word: word,
+                        functionName: functionName,
+                    };
+                }
+            }
+
+            // Check if the word matches a parameter key
+            const allParamKeys = collectAllParameterKeys(func);
+            if (allParamKeys.has(word)) {
+                // Verify the cursor is indeed at a parameter key position
+                if (isWordAtParameterKey(text, offset, word)) {
+                    return {
+                        type: 'parameter_name',
+                        word: word,
+                        functionName: functionName,
+                        parameterName: word,
+                    };
+                }
             }
         }
     }
@@ -136,20 +142,20 @@ function normalizeWord(word: string): string {
 }
 
 /**
- * Collect all parameter keys from a turn object, including from function_parameters
+ * Collect all parameter keys from a function object, including from function_parameters
  * and function_parameters_variations.
  */
-function collectAllParameterKeys(turn: any): Set<string> {
+function collectAllParameterKeys(func: any): Set<string> {
     const keys = new Set<string>();
 
-    if (turn.function_parameters && typeof turn.function_parameters === 'object') {
-        for (const key of Object.keys(turn.function_parameters)) {
+    if (func.function_parameters && typeof func.function_parameters === 'object') {
+        for (const key of Object.keys(func.function_parameters)) {
             keys.add(key);
         }
     }
 
-    if (Array.isArray(turn.function_parameters_variations)) {
-        for (const variation of turn.function_parameters_variations) {
+    if (Array.isArray(func.function_parameters_variations)) {
+        for (const variation of func.function_parameters_variations) {
             if (variation && typeof variation === 'object') {
                 for (const key of Object.keys(variation)) {
                     keys.add(key);
