@@ -12,6 +12,8 @@ export interface FunctionInfo {
     functionName?: string;
     functionSearchDescription?: string;
     reasoningInstructions?: string;
+    /** List of all parameters with their info */
+    parameters?: ParameterInfo[];
 }
 
 /**
@@ -64,6 +66,37 @@ export function getFunctionInfo(currentFilePath: string, functionName: string): 
         }
         if (parsed.reasoning_instructions) {
             info.reasoningInstructions = parsed.reasoning_instructions;
+        }
+
+        // Collect all parameters info
+        const properties = parsed?.function_parameters?.properties;
+        if (properties && typeof properties === 'object') {
+            const params: ParameterInfo[] = [];
+            const functionFileDir = path.dirname(functionFilePath);
+
+            for (const [paramName, paramDef] of Object.entries(properties) as [string, any][]) {
+                const paramInfo: ParameterInfo = { name: paramName };
+
+                if (paramDef.description) {
+                    paramInfo.description = paramDef.description;
+                }
+                if (paramDef.type) {
+                    paramInfo.type = paramDef.type;
+                }
+                if (paramDef['$ref']) {
+                    paramInfo.ref = paramDef['$ref'];
+                    const refData = resolveRef(paramDef['$ref'], functionFileDir);
+                    if (refData) {
+                        paramInfo.refData = refData;
+                    }
+                }
+
+                params.push(paramInfo);
+            }
+
+            if (params.length > 0) {
+                info.parameters = params;
+            }
         }
 
         // Return undefined if we found no info at all
@@ -179,6 +212,37 @@ export function formatFunctionInfoMarkdown(info: FunctionInfo): vscode.MarkdownS
         md.appendMarkdown(`---\n\n`);
         md.appendMarkdown(`**🧠 Reasoning Instructions:**\n\n`);
         md.appendMarkdown(`${info.reasoningInstructions}\n\n`);
+    }
+
+    // Display parameters list
+    if (info.parameters && info.parameters.length > 0) {
+        md.appendMarkdown(`---\n\n`);
+        md.appendMarkdown(`**📦 Parameters (${info.parameters.length}):**\n\n`);
+
+        for (const param of info.parameters) {
+            md.appendMarkdown(`- **\`${param.name}\`**`);
+
+            // Type info (inline or from $ref)
+            if (param.type) {
+                md.appendMarkdown(` — \`${param.type}\``);
+            } else if (param.refData && param.refData.type) {
+                md.appendMarkdown(` — \`${param.refData.type}\``);
+            }
+            md.appendMarkdown(`\n`);
+
+            // Description
+            if (param.description) {
+                md.appendMarkdown(`  - ${param.description}\n`);
+            }
+
+            // $ref enum values
+            if (param.refData && Array.isArray(param.refData.enum) && param.refData.enum.length > 0) {
+                const enumStr = param.refData.enum.map((v: any) => `\`${v}\``).join(' · ');
+                md.appendMarkdown(`  - **Allowed values:** ${enumStr}\n`);
+            }
+
+            md.appendMarkdown(`\n`);
+        }
     }
 
     return md;
